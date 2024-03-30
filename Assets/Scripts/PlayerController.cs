@@ -176,5 +176,6 @@ public class PlayerController : MonoBehaviourPun
         gold += goldToGive;
         
         // Update the UI
+        GameUI.instance.UpdateGoldText(gold);
     }
 }
