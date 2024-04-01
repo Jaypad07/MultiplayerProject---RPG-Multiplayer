@@ -50,9 +50,9 @@ public class Enemy : MonoBehaviourPun
         {
             // Calculate the distance
             float dist = Vector2.Distance(transform.position, _targetPlayer.transform.position);
-            
+
             // If we're able to attack, do so
-            if (dist < attackRange && Time.time - lastAttackTime >= attackRange)
+            if (dist < attackRange && Time.time - lastAttackTime >= attackRate)
             {
                 Attack();
             }
@@ -76,14 +76,14 @@ public class Enemy : MonoBehaviourPun
         lastAttackTime = Time.time;
         _targetPlayer.photonView.RPC("TakeDamage", _targetPlayer.photonPlayer, damage);
     }
-    
+
     // Updates the targeted player
     void DetectPlayer()
     {
         if (Time.time - lastPlayerDetectTime > playerDetectRate)
         {
             lastPlayerDetectTime = Time.time;
-            
+
             // Loop through all the players
             foreach (PlayerController player in GameManager.instance.players)
             {
@@ -96,15 +96,57 @@ public class Enemy : MonoBehaviourPun
                     {
                         _targetPlayer = null;
                     }
-                    else if (dist < chaseRange)
+                }
+                else if (dist < chaseRange)
+                {
+                    if (_targetPlayer == null)
                     {
-                        if (_targetPlayer == null)
-                        {
-                            _targetPlayer = player;
-                        }
+                        _targetPlayer = player;
                     }
                 }
             }
         }
+    }
+
+    [PunRPC]
+    public void TakeDamage(int damage)
+    {
+        curHp -= damage;
+
+        // Update health bar
+        healthBar.photonView.RPC("UpdateHealthBar", RpcTarget.All, curHp);
+
+        if (curHp <= 0)
+        {
+            Die();
+        }
+        else
+        {
+            photonView.RPC("FlashDamage", RpcTarget.All);
+        }
+    }
+
+    [PunRPC]
+    void FlashDamage()
+    {
+        StartCoroutine(DamageFlash());
+
+        IEnumerator DamageFlash()
+        {
+            sr.color = Color.red;
+            yield return new WaitForSeconds(0.05f);
+            sr.color = Color.white;
+        }
+    }
+
+    void Die()
+    {
+        if (objectToSpawnOnDeath != string.Empty)
+        {
+            PhotonNetwork.Instantiate(objectToSpawnOnDeath, transform.position, Quaternion.identity);
+        }
+
+        // Destroy the object across the network
+        PhotonNetwork.Destroy(gameObject);
     }
 }

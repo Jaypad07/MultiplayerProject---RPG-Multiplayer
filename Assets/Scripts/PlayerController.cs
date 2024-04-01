@@ -96,7 +96,8 @@ public class PlayerController : MonoBehaviourPun
     {
         lastAttackTime = Time.time;
 
-        Vector3 dir = (Input.mousePosition - Camera.main.ScreenToWorldPoint(transform.position)).normalized;
+        // Calculate the direction
+        Vector3 dir = (Input.mousePosition - Camera.main.WorldToScreenPoint(transform.position)).normalized;
 
         // Shoot a raycast in the direction
         RaycastHit2D hit = Physics2D.Raycast(transform.position + dir, dir, attackRange);
@@ -105,6 +106,8 @@ public class PlayerController : MonoBehaviourPun
         if (hit.collider != null && hit.collider.gameObject.CompareTag("Enemy"))
         {
             // Get the enemy and damage them
+            Enemy enemy = hit.collider.GetComponent<Enemy>();
+            enemy.photonView.RPC("TakeDamage", RpcTarget.MasterClient, damage);
         }
         
         // Play attack animation
@@ -126,14 +129,20 @@ public class PlayerController : MonoBehaviourPun
         }
         else
         {
-            StartCoroutine(DamageFlash());
+            photonView.RPC("FlashDamage", RpcTarget.All);
+        }
+    }
+
+    [PunRPC]
+    void FlashDamage()
+    {
+        StartCoroutine(DamageFlash());
             
-            IEnumerator DamageFlash()
-            {
-                sr.color = Color.red;
-                yield return new WaitForSeconds(0.05f);
-                sr.color = Color.white;
-            }
+        IEnumerator DamageFlash()
+        {
+            sr.color = Color.red;
+            yield return new WaitForSeconds(0.05f);
+            sr.color = Color.white;
         }
     }
 
@@ -158,6 +167,7 @@ public class PlayerController : MonoBehaviourPun
         rig.isKinematic = false;
         
         // Update the health bar
+        headerInfo.photonView.RPC("UpdateHealthBar", RpcTarget.All, curHp);
     }
 
     [PunRPC]

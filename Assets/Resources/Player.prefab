@@ -168,8 +168,8 @@ MonoBehaviour:
   id: 0
   moveSpeed: 3
   gold: 0
-  curHp: 30
-  maxHp: 100
+  curHp: 50
+  maxHp: 50
   dead: 0
   damage: 10
   attackRange: 1
